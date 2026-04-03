@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LAWONE — Story-to-Legal Score Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f9f9f9; color: #111; }
+
+    .lw-wrap { font-family: 'DM Sans', sans-serif; max-width: 780px; margin: 0 auto; padding: 2rem 1rem; }
+    .lw-header { text-align: center; margin-bottom: 2rem; }
+    .lw-logo { font-family: 'DM Serif Display', serif; font-size: 2.2rem; letter-spacing: -1px; }
+    .lw-logo span { color: #1D9E75; }
+    .lw-subtitle { font-size: 14px; color: #888; margin-top: 4px; }
+    .lw-card { background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .lw-label { font-size: 12px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+    textarea#lw-story { width: 100%; min-height: 130px; resize: vertical; padding: 12px; font-family: 'DM Sans', sans-serif; font-size: 15px; border: 1px solid #ddd; border-radius: 8px; background: #fafafa; color: #111; line-height: 1.6; }
+    textarea#lw-story:focus { outline: none; border-color: #1D9E75; box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+    .lw-btn { display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px; background: #1D9E75; color: #fff; border: none; border-radius: 8px; font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.15s; }
+    .lw-btn:hover { background: #0F6E56; }
+    .lw-btn:disabled { background: #eee; color: #aaa; cursor: not-allowed; }
+    .lw-score-bar-wrap { background: #eee; border-radius: 99px; height: 10px; margin: 12px 0; overflow: hidden; }
+    .lw-score-bar { height: 10px; border-radius: 99px; background: #1D9E75; transition: width 0.7s ease; }
+    .lw-score-num { font-family: 'DM Serif Display', serif; font-size: 2.6rem; line-height: 1; }
+    .lw-strength { font-size: 13px; font-weight: 500; padding: 3px 10px; border-radius: 99px; display: inline-block; margin-left: 10px; vertical-align: middle; }
+    .str-weak { background: #FCEBEB; color: #A32D2D; }
+    .str-medium { background: #FAEEDA; color: #854F0B; }
+    .str-strong { background: #EAF3DE; color: #3B6D11; }
+    .lw-nodes { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .lw-nodes th { text-align: left; padding: 8px 10px; font-size: 12px; font-weight: 500; color: #888; border-bottom: 1px solid #eee; }
+    .lw-nodes td { padding: 10px 10px; border-bottom: 1px solid #eee; }
+    .lw-nodes tr:last-child td { border-bottom: none; }
+    .badge-v { background: #EAF3DE; color: #3B6D11; font-size: 12px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+    .badge-p { background: #FAEEDA; color: #854F0B; font-size: 12px; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+    .lw-zigzag { background: #FAEEDA; border-left: 3px solid #EF9F27; border-radius: 0 8px 8px 0; padding: 1rem 1.25rem; margin-top: 1rem; }
+    .lw-zigzag .lw-zq { font-size: 14px; color: #633806; margin-bottom: 10px; line-height: 1.6; }
+    .lw-zigzag textarea { width: 100%; padding: 10px; font-family: 'DM Sans', sans-serif; font-size: 14px; border: 1px solid #FAC775; border-radius: 6px; background: #fffdf8; color: #412402; resize: vertical; min-height: 70px; }
+    .lw-btn-sm { padding: 8px 16px; font-size: 13px; background: #BA7517; color: #fff; border: none; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-weight: 500; cursor: pointer; margin-top: 8px; }
+    .lw-btn-sm:hover { background: #854F0B; }
+    .lw-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #fff; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .lw-vft { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+    .lw-vft-item { background: #f7f7f7; border-radius: 6px; padding: 8px 12px; font-size: 13px; }
+    .lw-vft-k { color: #888; font-size: 11px; margin-bottom: 2px; }
+    .lw-vft-v { font-weight: 500; color: #111; }
+    .lw-hidden { display: none; }
+    .lw-tip { font-size: 13px; color: #888; margin-top: 8px; line-height: 1.5; }
+    .lw-error-box { padding: 12px 16px; background: #FCEBEB; border-left: 3px solid #E24B4A; border-radius: 0 8px 8px 0; font-size: 14px; color: #A32D2D; margin-top: 1rem; }
+    /* FIX: export toast notice instead of alert() */
+    .lw-toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 14px; font-family: 'DM Sans', sans-serif; z-index: 9999; opacity: 0; transition: opacity 0.3s; pointer-events: none; }
+    .lw-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<div class="lw-wrap">
+  <div class="lw-header">
+    <div class="lw-logo">LAW<span>ONE</span></div>
+    <div class="lw-subtitle">Story-to-Legal Score Engine — Powered by Gemini AI</div>
+  </div>
+
+  <!-- Story Input -->
+  <div class="lw-card">
+    <div class="lw-label">Your Story</div>
+    <textarea id="lw-story" placeholder="E.g. I hired a contractor to fix my roof for ₹1 Lakh. I paid him half upfront, but he never showed up and isn't answering my calls."></textarea>
+    <p class="lw-tip">Describe your situation in plain language. The more detail you provide, the more accurate your LAWONE score will be.</p>
+    <div style="margin-top:12px;">
+      <button class="lw-btn" id="lw-submit-btn" onclick="submitStory()">
+        <span id="lw-btn-text">Analyze My Case</span>
+        <span id="lw-btn-spinner" class="lw-spinner lw-hidden"></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Error Box -->
+  <div id="lw-error" class="lw-error-box lw-hidden"></div>
+
+  <!-- Results Section -->
+  <div id="lw-result" class="lw-hidden">
+
+    <!-- Score Card -->
+    <div class="lw-card">
+      <div class="lw-label">LAWONE Score</div>
+      <div style="display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;">
+        <span class="lw-score-num" id="lw-score-display">0.00</span>
+        <span style="font-size:1.1rem;color:#888;font-family:'DM Serif Display',serif;">/ 1.00</span>
+        <span class="lw-strength" id="lw-strength-badge">Weak</span>
+      </div>
+      <div class="lw-score-bar-wrap" style="margin-top:14px;">
+        <div class="lw-score-bar" id="lw-bar" style="width:0%"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:#888;margin-top:4px;">
+        <span>0.00 — Weak</span><span>0.50 — Medium</span><span>1.00 — Strong</span>
+      </div>
+    </div>
+
+    <!-- VFT Card -->
+    <div class="lw-card">
+      <div class="lw-label">Verifiable Fact Table (VFT)</div>
+      <div class="lw-vft" id="lw-vft-grid"></div>
+    </div>
+
+    <!-- Nodes Table -->
+    <div class="lw-card">
+      <div class="lw-label">Legal Node Breakdown</div>
+      <table class="lw-nodes">
+        <thead>
+          <tr>
+            <th>Node</th>
+            <th>Requirement</th>
+            <th>Status</th>
+            <th style="text-align:right">Score</th>
+          </tr>
+        </thead>
+        <tbody id="lw-nodes-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Zig-Zag Follow-up -->
+    <div id="lw-zigzag" class="lw-hidden">
+      <div class="lw-zigzag">
+        <div class="lw-label" style="color:#854F0B;">Zig-Zag — We Need More Info</div>
+        <div class="lw-zq" id="lw-zq-text"></div>
+        <textarea id="lw-followup" placeholder="Type your answer here..."></textarea>
+        <br/>
+        <button class="lw-btn-sm" onclick="submitFollowup()">Submit Answer</button>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div style="margin-top:1rem;display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="lw-btn" onclick="resetForm()" style="background:#f5f5f5;color:#333;border:1px solid #ddd;">Start Over</button>
+      <button class="lw-btn" onclick="exportPDF()" style="background:#0F6E56;">Export Proof-of-Claim PDF</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- FIX: Toast replaces alert() -->
+<div id="lw-toast" class="lw-toast"></div>
+
+<script>
+  const GO_API = '/analyze';
+
+  function setLoading(on) {
+    const btn = document.getElementById('lw-submit-btn');
+    document.getElementById('lw-btn-text').textContent = on ? 'Analyzing...' : 'Analyze My Case';
+    document.getElementById('lw-btn-spinner').classList.toggle('lw-hidden', !on);
+    btn.disabled = on;
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('lw-error');
+    el.textContent = msg;
+    el.classList.remove('lw-hidden');
+    setTimeout(() => el.classList.add('lw-hidden'), 8000);
+  }
+
+  // FIX: toast notification instead of alert()
+  function showToast(msg, duration = 3500) {
+    const toast = document.getElementById('lw-toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), duration);
+  }
+
+  async function submitStory() {
+    const story = document.getElementById('lw-story').value.trim();
+    if (!story) { showError('Please describe your situation first.'); return; }
+    setLoading(true);
+    document.getElementById('lw-error').classList.add('lw-hidden');
+    try {
+      const res = await fetch(GO_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ story: story })
+      });
+      if (!res.ok) throw new Error('Server responded with status ' + res.status);
+      const data = await res.json();
+      renderResult(data);
+    } catch(e) {
+      showError('Could not reach the LAWONE backend. Make sure your Go server is running on localhost:8080. Error: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function renderResult(data) {
+    document.getElementById('lw-result').classList.remove('lw-hidden');
+
+    const score = data.lawone_score || 0;
+    const pct = Math.round(score * 100);
+    document.getElementById('lw-score-display').textContent = score.toFixed(2);
+    setTimeout(() => { document.getElementById('lw-bar').style.width = pct + '%'; }, 50);
+
+    const badge = document.getElementById('lw-strength-badge');
+    badge.textContent = data.strength || 'Weak';
+    badge.className = 'lw-strength ' + ({ Weak: 'str-weak', Medium: 'str-medium', Strong: 'str-strong' }[data.strength] || 'str-weak');
+
+    if (data.vft) {
+      const f = data.vft;
+      document.getElementById('lw-vft-grid').innerHTML = [
+        ['Entity', f.entity], ['Agreement', f.agreement],
+        ['Payment Made', f.payment_made], ['Performance', f.performance],
+        ['Receipt', f.has_receipt], ['Notice Sent', f.notice_sent]
+      ].map(([k, v]) => `
+        <div class="lw-vft-item">
+          <div class="lw-vft-k">${k}</div>
+          <div class="lw-vft-v">${v || '—'}</div>
+        </div>`).join('');
+    }
+
+    document.getElementById('lw-nodes-body').innerHTML = (data.nodes || []).map(n => `
+      <tr>
+        <td style="font-weight:500;font-size:13px;">${n.node}</td>
+        <td style="color:#888">${n.requirement}</td>
+        <td><span class="${n.status === 'Verified' ? 'badge-v' : 'badge-p'}">${n.status === 'Verified' ? 'Verified' : 'Pending'}</span></td>
+        <td style="text-align:right;font-weight:500;color:${n.score > 0 ? '#3B6D11' : '#aaa'}">
+          ${n.score > 0 ? '+' + n.score.toFixed(2) : '0.00'}
+        </td>
+      </tr>`).join('');
+
+    const zigzag = document.getElementById('lw-zigzag');
+    if (data.missing_question) {
+      document.getElementById('lw-zq-text').textContent = data.missing_question;
+      zigzag.classList.remove('lw-hidden');
+    } else {
+      zigzag.classList.add('lw-hidden');
+    }
+
+    document.getElementById('lw-result').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function submitFollowup() {
+    const answer = document.getElementById('lw-followup').value.trim();
+    if (!answer) return;
+    const original = document.getElementById('lw-story').value;
+    document.getElementById('lw-story').value = original + '\n\nAdditional info: ' + answer;
+    document.getElementById('lw-followup').value = '';
+    document.getElementById('lw-zigzag').classList.add('lw-hidden');
+    await submitStory();
+  }
+
+  function resetForm() {
+    document.getElementById('lw-story').value = '';
+    document.getElementById('lw-result').classList.add('lw-hidden');
+    document.getElementById('lw-error').classList.add('lw-hidden');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // FIX: replaced alert() with toast notification
+  function exportPDF() {
+    const score = parseFloat(document.getElementById('lw-score-display').textContent || '0');
+    if (score < 0.90) {
+      showToast('Export unlocks at a LAWONE score of 0.90. Keep adding details to strengthen your case.');
+    } else {
+      showToast('Connecting to /export endpoint...');
+      // TODO: call your Go /export endpoint here
+    }
+  }
+</script>
+
+</body>
+</html>
